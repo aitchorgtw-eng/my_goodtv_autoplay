@@ -42,7 +42,7 @@
         #toggle-ctrl { position: absolute; bottom: 20px; right: 20px; z-index: 1000; opacity: 0.3; cursor: pointer; padding: 10px; background: #000; color: #fff; border: 1px solid #fff; border-radius: 50%; width: 40px; height: 40px;}
         #toggle-ctrl:hover { opacity: 1; }
 
-        /* --- 新增：廣播看板 (右上) --- */
+        /* --- 廣播看板 (右上) --- */
         #broadcast-panel {
             display: none; /* 預設隱藏，播放時顯示 */
             position: absolute; top: 20px; right: 20px;
@@ -86,10 +86,36 @@
 
     <div id="setup-container">
         <h2>📺 全能輪播播放器 + 語音廣播</h2>
-        <div class="input-group"><div class="input-wrapper"><label>影片 1</label><input type="text" id="url1" placeholder="YouTube 或 GoodTV 網址"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
-        <div class="input-group"><div class="input-wrapper"><label>影片 2</label><input type="text" id="url2"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
-        <div class="input-group"><div class="input-wrapper"><label>影片 3</label><input type="text" id="url3"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
-        <div class="input-group" style="width: 50%;"><div class="input-wrapper"><label>輪播秒數</label><input type="number" id="interval" value="600"></div></div>
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片 1</label>
+                <input type="text" id="url1" value="https://www.goodtv.tv/watch?episode=114268">
+            </div>
+            <button class="btn btn-search" onclick="openYT()">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood()">Good</button>
+        </div>
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片 2</label>
+                <input type="text" id="url2" value="https://www.goodtv.tv/watch?episode=113128">
+            </div>
+            <button class="btn btn-search" onclick="openYT()">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood()">Good</button>
+        </div>
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片 3</label>
+                <input type="text" id="url3" value="https://www.goodtv.tv/watch?episode=111429">
+            </div>
+            <button class="btn btn-search" onclick="openYT()">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood()">Good</button>
+        </div>
+        <div class="input-group" style="width: 50%;">
+            <div class="input-wrapper">
+                <label>輪播秒數</label>
+                <input type="number" id="interval" value="600">
+            </div>
+        </div>
         <button class="btn btn-primary" onclick="startSystem()">▶ 啟動播放</button>
     </div>
 
@@ -152,20 +178,16 @@
             const text = document.getElementById('broadcast-text').value;
             if (!text) return;
 
-            // 檢查瀏覽器支援
             if ('speechSynthesis' in window) {
-                // 停止目前正在說的話 (避免重疊)
                 window.speechSynthesis.cancel();
-
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-TW'; // 設定為中文
-                utterance.rate = 1.0;     // 語速
-                utterance.pitch = 1.0;    // 音調
-                utterance.volume = 1.0;   // 音量 (最大)
-
+                utterance.lang = 'zh-TW'; 
+                utterance.rate = 1.0;     
+                utterance.pitch = 1.0;    
+                utterance.volume = 1.0;   
                 window.speechSynthesis.speak(utterance);
             } else {
-                alert("您的瀏覽器不支援語音功能 (請使用 Chrome)");
+                alert("您的瀏覽器不支援語音功能");
             }
         }
 
@@ -205,4 +227,23 @@
 
         function adjust(type, value) {
             const frame = document.getElementById('main-frame');
-            if (type === 'x') viewState.x +=
+            if (type === 'x') viewState.x += value;
+            if (type === 'y') viewState.y += value;
+            if (type === 'scale') viewState.scale += value;
+            frame.style.transform = `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`;
+        }
+
+        function resetView() { viewState = { x: 0, y: 0, scale: 1.0 }; adjust('x', 0); }
+        
+        function toggleCtrl() {
+            const panel = document.getElementById('control-panel');
+            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function toggleBroadcast() {
+            const panel = document.getElementById('broadcast-panel');
+            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
