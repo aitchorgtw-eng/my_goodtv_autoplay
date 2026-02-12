@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全能輪播播放器 (支援 YouTube & GoodTV)</title>
+    <title>GoodTV/YT 輪播廣播系統</title>
     <style>
         /* --- 基礎設定 --- */
         body, html { margin: 0; padding: 0; height: 100%; background-color: #000; color: #fff; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
@@ -13,103 +13,98 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             height: 100vh; background: linear-gradient(135deg, #1e2024 0%, #23272b 100%); z-index: 200; position: relative;
         }
-        
         .input-group { margin-bottom: 15px; width: 90%; max-width: 700px; display: flex; align-items: flex-end; gap: 10px; }
         .input-wrapper { flex-grow: 1; }
         label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px;}
         input { width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: #fff; box-sizing: border-box; border-radius: 4px;}
-        input:focus { border-color: #007bff; outline: none; }
 
         .btn { padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; color: white; white-space: nowrap;}
-        .btn-search { background-color: #ff0000; height: 42px; display: flex; align-items: center;} /* YouTube 紅 */
-        .btn-search:hover { background-color: #cc0000; }
-        .btn-goodtv { background-color: #28a745; height: 42px; display: flex; align-items: center;} /* GoodTV 綠 */
-        .btn-goodtv:hover { background-color: #218838; }
-
+        .btn-search { background-color: #ff0000; height: 42px; display: flex; align-items: center;} 
+        .btn-goodtv { background-color: #28a745; height: 42px; display: flex; align-items: center;}
         .btn-primary { margin-top: 20px; padding: 15px 60px; background-color: #007bff; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
-        .btn-primary:hover { background-color: #0056b3; transform: translateY(-1px);}
 
         /* --- 播放器容器 --- */
-        #player-wrapper { 
-            display: none; 
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
-            overflow: hidden; 
-            background-color: #000; 
-        }
+        #player-wrapper { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000; }
+        #loading-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 18px; text-align: center; z-index: 0; }
+        #main-frame { width: 100vw; height: 100vh; border: none; position: absolute; z-index: 1; transform-origin: 0 0; transition: transform 0.2s ease-out; background-color: transparent; }
 
-        /* 載入提示 */
-        #loading-indicator {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #666; font-size: 18px; text-align: center; z-index: 0;
-        }
-        .loader {
-            border: 4px solid #333; border-top: 4px solid #007bff; border-radius: 50%;
-            width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Iframe */
-        #main-frame { 
-            width: 100vw; height: 100vh; border: none; 
-            position: absolute; z-index: 1; 
-            transform-origin: 0 0; transition: transform 0.2s ease-out; 
-            background-color: transparent; 
-        }
-
-        /* --- 控制面板 --- */
+        /* --- 控制面板 (右下) --- */
         #control-panel {
             display: none; position: absolute; bottom: 20px; right: 20px;
             background: rgba(0, 0, 0, 0.9); padding: 15px; border-radius: 8px;
             z-index: 999; border: 1px solid #555; width: 260px; box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
-        #control-panel h3 { margin: 0 0 10px 0; font-size: 14px; text-align: center; color: #00d2ff; border-bottom: 1px solid #444; padding-bottom: 5px;}
         .ctrl-row { display: flex; justify-content: space-between; margin-bottom: 8px; gap: 5px;}
         .ctrl-btn { background: #444; color: #fff; border: 1px solid #666; flex: 1; padding: 8px 0; cursor: pointer; font-size: 12px; border-radius: 4px;}
-        .ctrl-btn:active { background: #666; }
-        
         .ctrl-action-btn { width: 100%; margin-top: 5px; padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;}
         .btn-stop { background-color: #ffc107; color: #000; } 
         
         #toggle-ctrl { position: absolute; bottom: 20px; right: 20px; z-index: 1000; opacity: 0.3; cursor: pointer; padding: 10px; background: #000; color: #fff; border: 1px solid #fff; border-radius: 50%; width: 40px; height: 40px;}
         #toggle-ctrl:hover { opacity: 1; }
+
+        /* --- 新增：廣播看板 (右上) --- */
+        #broadcast-panel {
+            display: none; /* 預設隱藏，播放時顯示 */
+            position: absolute; top: 20px; right: 20px;
+            width: 250px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 999;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+        #broadcast-panel h4 { margin: 0 0 10px 0; color: #00d2ff; font-size: 16px; display: flex; justify-content: space-between; align-items: center;}
         
+        textarea#broadcast-text {
+            width: 100%; height: 80px;
+            background: #222; color: #fff; border: 1px solid #444;
+            padding: 8px; border-radius: 4px;
+            font-size: 16px; resize: vertical;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+        
+        #btn-speak {
+            width: 100%; margin-top: 10px; padding: 10px;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: white; border: none; border-radius: 4px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        #btn-speak:hover { opacity: 0.9; transform: scale(1.02); }
+        #btn-speak:active { transform: scale(0.98); }
+
+        /* 縮小按鈕 */
+        #btn-minimize { background: none; border: none; color: #aaa; cursor: pointer; font-size: 18px; }
+        #btn-minimize:hover { color: #fff; }
+
         #status-bar { display: none; position: absolute; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 5px; font-size: 12px; pointer-events: none; z-index: 998; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="setup-container">
-        <h2>📺 全能輪播播放器</h2>
-        
-        <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 1 (支援 YouTube / GoodTV)</label><input type="text" id="url1" placeholder="請貼上網址..."></div>
-            <button class="btn btn-search" onclick="openYT(1)">YT</button>
-            <button class="btn btn-goodtv" onclick="openGood(1)">Good</button>
-        </div>
-        <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 2</label><input type="text" id="url2" placeholder="請貼上網址..."></div>
-            <button class="btn btn-search" onclick="openYT(2)">YT</button>
-            <button class="btn btn-goodtv" onclick="openGood(2)">Good</button>
-        </div>
-        <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 3</label><input type="text" id="url3" placeholder="請貼上網址..."></div>
-            <button class="btn btn-search" onclick="openYT(3)">YT</button>
-            <button class="btn btn-goodtv" onclick="openGood(3)">Good</button>
-        </div>
-        <div class="input-group" style="width: 50%;">
-            <div class="input-wrapper"><label>輪播切換時間 (秒)</label><input type="number" id="interval" value="600"></div>
-        </div>
-
+        <h2>📺 全能輪播播放器 + 語音廣播</h2>
+        <div class="input-group"><div class="input-wrapper"><label>影片 1</label><input type="text" id="url1" placeholder="YouTube 或 GoodTV 網址"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
+        <div class="input-group"><div class="input-wrapper"><label>影片 2</label><input type="text" id="url2"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
+        <div class="input-group"><div class="input-wrapper"><label>影片 3</label><input type="text" id="url3"></div><button class="btn btn-search" onclick="openYT()">YT</button><button class="btn btn-goodtv" onclick="openGood()">Good</button></div>
+        <div class="input-group" style="width: 50%;"><div class="input-wrapper"><label>輪播秒數</label><input type="number" id="interval" value="600"></div></div>
         <button class="btn btn-primary" onclick="startSystem()">▶ 啟動播放</button>
-        <p style="color: #666; font-size: 12px; margin-top: 15px;">*貼上 YouTube 一般網址即可，系統會自動轉換</p>
     </div>
 
     <div id="status-bar">準備中...</div>
-    <button id="toggle-ctrl" onclick="togglePanel()">⚙️</button>
+    <button id="toggle-ctrl" onclick="toggleCtrl()">⚙️</button>
     
     <div id="player-wrapper">
-        <div id="loading-indicator"><div class="loader"></div><div>載入中...</div></div>
+        <div id="loading-indicator">載入中...</div>
         <iframe id="main-frame" src="" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" sandbox="allow-forms allow-scripts allow-same-origin allow-presentation"></iframe>
+    </div>
+
+    <div id="broadcast-panel">
+        <h4>📣 廣播看板 <button id="btn-minimize" onclick="toggleBroadcast()" title="隱藏/顯示">_</button></h4>
+        <textarea id="broadcast-text" placeholder="輸入文字後，點擊下方按鈕播放語音..."></textarea>
+        <button id="btn-speak" onclick="speakNow()">🔊 播放語音</button>
     </div>
 
     <div id="control-panel">
@@ -117,9 +112,11 @@
         <div class="ctrl-row"><button class="ctrl-btn" onclick="adjust('y', -10)">上移 ▲</button><button class="ctrl-btn" onclick="adjust('scale', 0.05)">放大 +</button></div>
         <div class="ctrl-row"><button class="ctrl-btn" onclick="adjust('x', -10)">左移 ◀</button><button class="ctrl-btn" onclick="resetView()">重置 ⟲</button><button class="ctrl-btn" onclick="adjust('x', 10)">右移 ▶</button></div>
         <div class="ctrl-row"><button class="ctrl-btn" onclick="adjust('y', 10)">下移 ▼</button><button class="ctrl-btn" onclick="adjust('scale', -0.05)">縮小 -</button></div>
+        
         <hr style="border-color: #444; margin: 10px 0;">
-        <button class="ctrl-action-btn" style="background: #007bff;" onclick="togglePanel()">繼續播放 (隱藏面板)</button>
-        <button class="ctrl-action-btn btn-stop" onclick="stopSystem()">⏹ 停止並返回設定</button>
+        <button class="ctrl-action-btn" style="background: #00d2ff; color:#000;" onclick="toggleBroadcast()">📣 顯示/隱藏 廣播板</button>
+        <button class="ctrl-action-btn" style="background: #007bff;" onclick="toggleCtrl()">繼續播放 (隱藏面板)</button>
+        <button class="ctrl-action-btn btn-stop" onclick="stopSystem()">⏹ 停止並返回</button>
     </div>
 
     <script>
@@ -131,7 +128,6 @@
             const u3 = document.getElementById('url3').value.trim();
             const seconds = parseInt(document.getElementById('interval').value, 10);
             
-            // 建立清單時，直接進行「網址轉換」
             playlist = [u1, u2, u3].filter(u => u !== "").map(convertUrl);
 
             if (playlist.length === 0) { alert("請至少輸入一個網址"); return; }
@@ -142,38 +138,46 @@
             document.getElementById('status-bar').style.display = 'block';
             document.getElementById('control-panel').style.display = 'block'; 
             document.getElementById('toggle-ctrl').style.display = 'block';
+            
+            // 啟動時同時顯示廣播板
+            document.getElementById('broadcast-panel').style.display = 'block';
 
             playNext();
             if(timer) clearInterval(timer);
             timer = setInterval(playNext, seconds * 1000);
         }
 
-        // --- 核心：網址轉換邏輯 ---
+        // --- 語音廣播功能 ---
+        function speakNow() {
+            const text = document.getElementById('broadcast-text').value;
+            if (!text) return;
+
+            // 檢查瀏覽器支援
+            if ('speechSynthesis' in window) {
+                // 停止目前正在說的話 (避免重疊)
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW'; // 設定為中文
+                utterance.rate = 1.0;     // 語速
+                utterance.pitch = 1.0;    // 音調
+                utterance.volume = 1.0;   // 音量 (最大)
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("您的瀏覽器不支援語音功能 (請使用 Chrome)");
+            }
+        }
+
         function convertUrl(url) {
-            // 判斷是否為 YouTube 網址
             if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 let videoId = '';
-                
-                // 處理 https://www.youtube.com/watch?v=ID
-                if (url.includes('v=')) {
-                    videoId = url.split('v=')[1].split('&')[0];
-                } 
-                // 處理 https://youtu.be/ID
-                else if (url.includes('youtu.be/')) {
-                    videoId = url.split('youtu.be/')[1].split('?')[0];
-                }
-                // 處理已經是 embed 的 (防止重複轉換)
-                else if (url.includes('embed/')) {
-                    return url; 
-                }
+                if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+                else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+                else if (url.includes('embed/')) return url; 
 
-                if (videoId) {
-                    // 轉換為嵌入格式，並強制開啟自動播放、隱藏控制項
-                    // 注意：rel=0 代表播完不顯示推薦影片
-                    return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&rel=0&loop=1&playlist=${videoId}`;
-                }
+                if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&rel=0&loop=1&playlist=${videoId}`;
             }
-            // 如果不是 YouTube (例如 GoodTV)，就原樣回傳
             return url;
         }
 
@@ -184,41 +188,21 @@
             document.getElementById('status-bar').style.display = 'none';
             document.getElementById('control-panel').style.display = 'none';
             document.getElementById('toggle-ctrl').style.display = 'none';
+            document.getElementById('broadcast-panel').style.display = 'none';
             document.getElementById('setup-container').style.display = 'flex';
         }
 
-        function openYT(index) {
-            window.open('https://www.youtube.com', '_blank');
-        }
-        function openGood(index) {
-            window.open('https://www.goodtv.tv/search/program/801', '_blank');
-        }
+        function openYT() { window.open('https://www.youtube.com', '_blank'); }
+        function openGood() { window.open('https://www.goodtv.tv/search/program/801', '_blank'); }
 
         function playNext() {
             const frame = document.getElementById('main-frame');
             const status = document.getElementById('status-bar');
             frame.src = playlist[currentIndex];
             status.innerText = `播放中 (${currentIndex + 1}/${playlist.length})`;
-            
-            // 如果是 YouTube，我們通常不需要裁切，因為 Embed 就是滿版的
-            // 但如果是 GoodTV，可能保留上次的裁切設定
-            
             currentIndex = (currentIndex + 1) % playlist.length;
         }
 
         function adjust(type, value) {
             const frame = document.getElementById('main-frame');
-            if (type === 'x') viewState.x += value;
-            if (type === 'y') viewState.y += value;
-            if (type === 'scale') viewState.scale += value;
-            frame.style.transform = `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`;
-        }
-
-        function resetView() { viewState = { x: 0, y: 0, scale: 1.0 }; adjust('x', 0); }
-        function togglePanel() {
-            const panel = document.getElementById('control-panel');
-            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
-        }
-    </script>
-</body>
-</html>
+            if (type === 'x') viewState.x +=
