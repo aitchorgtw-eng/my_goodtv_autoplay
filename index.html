@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodTV 滿版輪播系統 (裁切版)</title>
+    <title>GoodTV 滿版輪播系統 (進階版)</title>
     <style>
         /* --- 基礎設定 --- */
         body, html { margin: 0; padding: 0; height: 100%; background-color: #000; color: #fff; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
@@ -13,62 +13,109 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             height: 100vh; background: linear-gradient(135deg, #1e2024 0%, #23272b 100%); z-index: 200; position: relative;
         }
-        .input-group { margin-bottom: 15px; width: 80%; max-width: 600px; }
-        label { display: block; margin-bottom: 5px; color: #aaa; }
-        input { width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: #fff; box-sizing: border-box; }
-        button.primary-btn { margin-top: 20px; padding: 15px 40px; background-color: #007bff; color: white; border: none; font-size: 18px; cursor: pointer; border-radius: 5px; }
-        button.primary-btn:hover { background-color: #0056b3; }
-
-        /* --- 播放器容器 (視窗) --- */
-        #player-wrapper {
-            display: none;
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            overflow: hidden; /* 關鍵：把超出的部分切掉 */
+        
+        /* 輸入區塊樣式優化 */
+        .input-group { 
+            margin-bottom: 15px; width: 90%; max-width: 700px; 
+            display: flex; align-items: flex-end; gap: 10px;
         }
+        .input-wrapper { flex-grow: 1; }
+        
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px;}
+        input { width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: #fff; box-sizing: border-box; border-radius: 4px;}
+        input:focus { border-color: #007bff; outline: none; }
 
-        /* --- Iframe 本體 (被操作的對象) --- */
+        /* 按鈕樣式 */
+        .btn { padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; color: white; white-space: nowrap;}
+        .btn-search { background-color: #28a745; height: 42px; display: flex; align-items: center;} /* 綠色搜尋鈕 */
+        .btn-search:hover { background-color: #218838; }
+        
+        .btn-primary { margin-top: 20px; padding: 15px 50px; background-color: #007bff; font-size: 18px; }
+        .btn-primary:hover { background-color: #0056b3; }
+
+        .btn-danger { margin-top: 20px; background-color: #dc3545; font-size: 14px; margin-left: 10px;}
+        .btn-danger:hover { background-color: #c82333; }
+
+        /* --- 播放器容器 --- */
+        #player-wrapper {
+            display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden;
+        }
         #main-frame {
-            width: 100vw; height: 100vh; border: none;
-            position: absolute;
-            transform-origin: 0 0; /* 從左上角開始變形 */
-            /* 這裡的數值會由 JS 控制 */
-            transform: translate(0px, 0px) scale(1);
-            transition: transform 0.1s ease-out; /* 讓移動平滑一點 */
+            width: 100vw; height: 100vh; border: none; position: absolute;
+            transform-origin: 0 0; transform: translate(0px, 0px) scale(1); transition: transform 0.2s ease-out;
         }
 
         /* --- 浮動控制面板 (Control Panel) --- */
         #control-panel {
-            display: none;
-            position: absolute; bottom: 20px; right: 20px;
-            background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 8px;
-            z-index: 999; border: 1px solid #444;
-            width: 250px;
+            display: none; position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.85); padding: 15px; border-radius: 8px;
+            z-index: 999; border: 1px solid #555; width: 260px; box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
-        #control-panel h3 { margin: 0 0 10px 0; font-size: 14px; text-align: center; color: #00d2ff; }
-        .ctrl-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .ctrl-btn { background: #444; color: #fff; border: 1px solid #666; width: 30%; padding: 5px; cursor: pointer; font-size: 12px; }
+        #control-panel h3 { margin: 0 0 10px 0; font-size: 14px; text-align: center; color: #00d2ff; border-bottom: 1px solid #444; padding-bottom: 5px;}
+        
+        .ctrl-row { display: flex; justify-content: space-between; margin-bottom: 8px; gap: 5px;}
+        .ctrl-btn { background: #444; color: #fff; border: 1px solid #666; flex: 1; padding: 8px 0; cursor: pointer; font-size: 12px; border-radius: 4px;}
         .ctrl-btn:active { background: #666; }
-        .ctrl-info { text-align: center; font-size: 12px; color: #aaa; margin-top: 5px; }
-        #toggle-ctrl { position: absolute; top: 10px; right: 10px; z-index: 1000; opacity: 0.3; cursor: pointer; }
+        
+        .ctrl-action-btn { width: 100%; margin-top: 5px; padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;}
+        .btn-stop { background-color: #ffc107; color: #000; } /* 黃色: 停止 */
+        .btn-close { background-color: #dc3545; } /* 紅色: 關閉 */
+
+        #toggle-ctrl { position: absolute; bottom: 20px; right: 20px; z-index: 1000; opacity: 0.3; cursor: pointer; padding: 10px; background: #000; color: #fff; border: 1px solid #fff; border-radius: 50%; width: 40px; height: 40px;}
         #toggle-ctrl:hover { opacity: 1; }
 
         /* --- 狀態列 --- */
         #status-bar {
             display: none; position: absolute; top: 0; left: 0; width: 100%;
-            background: rgba(0,0,0,0.7); padding: 5px; font-size: 12px; pointer-events: none; z-index: 998;
+            background: rgba(0,0,0,0.7); padding: 5px; font-size: 12px; pointer-events: none; z-index: 998; text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div id="setup-container">
-        <h2>📺 GoodTV 滿版設定</h2>
-        <div class="input-group"><label>影片網址 1</label><input type="text" id="url1" placeholder="GoodTV 網址..." value=""></div>
-        <div class="input-group"><label>影片網址 2</label><input type="text" id="url2" placeholder="GoodTV 網址..." value=""></div>
-        <div class="input-group"><label>影片網址 3</label><input type="text" id="url3" placeholder="GoodTV 網址..." value=""></div>
-        <div class="input-group"><label>輪播秒數</label><input type="number" id="interval" value="600"></div>
-        <button class="primary-btn" onclick="startSystem()">啟動並調整畫面 ▶</button>
-        <p style="color: #666; font-size: 12px; margin-top: 10px;">啟動後使用右下角面板調整位置</p>
+        <h2>📺 GoodTV 輪播設定面板</h2>
+        
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片網址 1</label>
+                <input type="text" id="url1" value="https://www.goodtv.tv/watch?episode=114268">
+            </div>
+            <button class="btn btn-search" onclick="openSearch(1)">🔍 找影片</button>
+        </div>
+
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片網址 2</label>
+                <input type="text" id="url2" value="https://www.goodtv.tv/watch?episode=113128">
+            </div>
+            <button class="btn btn-search" onclick="openSearch(2)">🔍 找影片</button>
+        </div>
+
+        <div class="input-group">
+            <div class="input-wrapper">
+                <label>影片網址 3</label>
+                <input type="text" id="url3" value="https://www.goodtv.tv/watch?episode=111429">
+            </div>
+            <button class="btn btn-search" onclick="openSearch(3)">🔍 找影片</button>
+        </div>
+
+        <div class="input-group" style="width: 50%;">
+            <div class="input-wrapper">
+                <label>輪播切換時間 (秒)</label>
+                <input type="number" id="interval" value="600">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="startSystem()">啟動並調整畫面 ▶</button>
+            <button class="btn btn-danger" onclick="closeApp()">關閉程式 ✖</button>
+        </div>
+        
+        <p style="color: #666; font-size: 12px; margin-top: 20px;">
+            *注意：點擊「找影片」將開啟新視窗，請複製網址後貼回此處。<br>
+            *若無法關閉程式，請按鍵盤 <b>Alt + F4</b>
+        </p>
     </div>
 
     <div id="status-bar">準備中...</div>
@@ -82,7 +129,8 @@
     </div>
 
     <div id="control-panel">
-        <h3>📏 畫面裁切控制器</h3>
+        <h3>📏 畫面控制器</h3>
+        
         <div class="ctrl-row">
             <button class="ctrl-btn" onclick="adjust('y', -10)">上移 ▲</button>
             <button class="ctrl-btn" onclick="adjust('scale', 0.05)">放大 +</button>
@@ -96,12 +144,11 @@
             <button class="ctrl-btn" onclick="adjust('y', 10)">下移 ▼</button>
             <button class="ctrl-btn" onclick="adjust('scale', -0.05)">縮小 -</button>
         </div>
-        <div class="ctrl-info">
-            縮放: <span id="val-scale">1.0</span> | X: <span id="val-x">0</span> | Y: <span id="val-y">0</span>
-        </div>
-        <div style="margin-top:5px; border-top:1px solid #555; padding-top:5px;">
-            <button class="ctrl-btn" style="width:100%; background:#005cbf;" onclick="togglePanel()">隱藏面板 (完成)</button>
-        </div>
+        
+        <hr style="border-color: #444; margin: 10px 0;">
+        <button class="ctrl-action-btn" style="background: #007bff;" onclick="togglePanel()">繼續播放 (隱藏面板)</button>
+        <button class="ctrl-action-btn btn-stop" onclick="stopSystem()">⏹ 停止並返回設定</button>
+        <button class="ctrl-action-btn btn-close" onclick="closeApp()">✖ 關閉整個程式</button>
     </div>
 
     <script>
@@ -109,7 +156,7 @@
         let playlist = [];
         let currentIndex = 0;
         let timer = null;
-        let viewState = { x: 0, y: 0, scale: 1.0 }; // 儲存位置設定
+        let viewState = { x: 0, y: 0, scale: 1.0 }; 
 
         // --- 核心功能 ---
         function startSystem() {
@@ -128,11 +175,41 @@
             document.getElementById('setup-container').style.display = 'none';
             document.getElementById('player-wrapper').style.display = 'block';
             document.getElementById('status-bar').style.display = 'block';
-            document.getElementById('control-panel').style.display = 'block'; // 預設顯示調整面板
+            document.getElementById('control-panel').style.display = 'block'; 
+            document.getElementById('toggle-ctrl').style.display = 'block';
 
             // 啟動輪播
             playNext();
+            if(timer) clearInterval(timer); // 防呆
             timer = setInterval(playNext, seconds * 1000);
+        }
+
+        function stopSystem() {
+            // 停止計時器
+            if(timer) clearInterval(timer);
+            
+            // 清空 iframe (停止聲音)
+            document.getElementById('main-frame').src = "";
+            
+            // 切換回設定介面
+            document.getElementById('player-wrapper').style.display = 'none';
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('control-panel').style.display = 'none';
+            document.getElementById('toggle-ctrl').style.display = 'none';
+            document.getElementById('setup-container').style.display = 'flex';
+        }
+
+        function closeApp() {
+            // 嘗試關閉視窗
+            if (confirm("確定要關閉程式嗎？\n(如果點擊後無反應，請按鍵盤 Alt + F4)")) {
+                window.close();
+            }
+        }
+
+        function openSearch(index) {
+            // 開啟搜尋頁面
+            window.open('https://www.goodtv.tv/search/program/801', '_blank');
+            alert(`已開啟搜尋頁面。\n\n請在該頁面找到影片後，「複製網址」，然後「貼上」到輸入框 ${index}。`);
         }
 
         function playNext() {
@@ -140,12 +217,12 @@
             const status = document.getElementById('status-bar');
             
             frame.src = playlist[currentIndex];
-            status.innerText = `播放中 (${currentIndex + 1}/${playlist.length}) - 請使用右下角面板調整畫面`;
+            status.innerText = `播放中 (${currentIndex + 1}/${playlist.length}) - 點擊右下角⚙️設定`;
 
             currentIndex = (currentIndex + 1) % playlist.length;
         }
 
-        // --- 畫面調整邏輯 (裁切核心) ---
+        // --- 畫面調整邏輯 ---
         function adjust(type, value) {
             const frame = document.getElementById('main-frame');
             
@@ -153,18 +230,12 @@
             if (type === 'y') viewState.y += value;
             if (type === 'scale') viewState.scale += value;
 
-            // 更新畫面
             frame.style.transform = `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`;
-            
-            // 更新數值顯示
-            document.getElementById('val-x').innerText = viewState.x;
-            document.getElementById('val-y').innerText = viewState.y;
-            document.getElementById('val-scale').innerText = viewState.scale.toFixed(2);
         }
 
         function resetView() {
             viewState = { x: 0, y: 0, scale: 1.0 };
-            adjust('x', 0); // 觸發更新
+            adjust('x', 0);
         }
 
         function togglePanel() {
