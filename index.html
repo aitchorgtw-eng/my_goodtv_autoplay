@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodTV 輪播播放器 (防黑屏優化版)</title>
+    <title>全能輪播播放器 (支援 YouTube & GoodTV)</title>
     <style>
         /* --- 基礎設定 --- */
         body, html { margin: 0; padding: 0; height: 100%; background-color: #000; color: #fff; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; }
@@ -21,46 +21,39 @@
         input:focus { border-color: #007bff; outline: none; }
 
         .btn { padding: 10px 20px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; color: white; white-space: nowrap;}
-        .btn-search { background-color: #28a745; height: 42px; display: flex; align-items: center;} 
-        .btn-search:hover { background-color: #218838; }
+        .btn-search { background-color: #ff0000; height: 42px; display: flex; align-items: center;} /* YouTube 紅 */
+        .btn-search:hover { background-color: #cc0000; }
+        .btn-goodtv { background-color: #28a745; height: 42px; display: flex; align-items: center;} /* GoodTV 綠 */
+        .btn-goodtv:hover { background-color: #218838; }
+
         .btn-primary { margin-top: 20px; padding: 15px 60px; background-color: #007bff; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
         .btn-primary:hover { background-color: #0056b3; transform: translateY(-1px);}
 
-        /* --- 播放器容器 (修正黑屏關鍵) --- */
+        /* --- 播放器容器 --- */
         #player-wrapper { 
             display: none; 
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
             overflow: hidden; 
-            background-color: #000; /* 確保背景是黑的 */
+            background-color: #000; 
         }
 
-        /* 載入提示文字 (位於 Iframe 背後) */
+        /* 載入提示 */
         #loading-indicator {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #666;
-            font-size: 18px;
-            text-align: center;
-            z-index: 0; /* 最底層 */
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #666; font-size: 18px; text-align: center; z-index: 0;
         }
-        
-        /* 載入動畫圈圈 */
         .loader {
             border: 4px solid #333; border-top: 4px solid #007bff; border-radius: 50%;
-            width: 30px; height: 30px; animation: spin 1s linear infinite;
-            margin: 0 auto 10px auto;
+            width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Iframe 本體 */
+        /* Iframe */
         #main-frame { 
             width: 100vw; height: 100vh; border: none; 
-            position: absolute; 
-            z-index: 1; /* 蓋在文字上面 */
-            transform-origin: 0 0; 
-            transition: transform 0.2s ease-out; 
-            background-color: transparent; /* 載入前透明，才能看到後面的字 */
+            position: absolute; z-index: 1; 
+            transform-origin: 0 0; transition: transform 0.2s ease-out; 
+            background-color: transparent; 
         }
 
         /* --- 控制面板 --- */
@@ -86,37 +79,36 @@
 <body>
 
     <div id="setup-container">
-        <h2>📺 GoodTV 輪播播放器</h2>
+        <h2>📺 全能輪播播放器</h2>
         
         <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 1</label><input type="text" id="url1" value="https://www.goodtv.tv/watch?episode=114268"></div>
-            <button class="btn btn-search" onclick="openSearch(1)">🔍 找影片</button>
+            <div class="input-wrapper"><label>影片網址 1 (支援 YouTube / GoodTV)</label><input type="text" id="url1" placeholder="請貼上網址..."></div>
+            <button class="btn btn-search" onclick="openYT(1)">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood(1)">Good</button>
         </div>
         <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 2</label><input type="text" id="url2" value="https://www.goodtv.tv/watch?episode=113128"></div>
-            <button class="btn btn-search" onclick="openSearch(2)">🔍 找影片</button>
+            <div class="input-wrapper"><label>影片網址 2</label><input type="text" id="url2" placeholder="請貼上網址..."></div>
+            <button class="btn btn-search" onclick="openYT(2)">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood(2)">Good</button>
         </div>
         <div class="input-group">
-            <div class="input-wrapper"><label>影片網址 3</label><input type="text" id="url3" value="https://www.goodtv.tv/watch?episode=111429"></div>
-            <button class="btn btn-search" onclick="openSearch(3)">🔍 找影片</button>
+            <div class="input-wrapper"><label>影片網址 3</label><input type="text" id="url3" placeholder="請貼上網址..."></div>
+            <button class="btn btn-search" onclick="openYT(3)">YT</button>
+            <button class="btn btn-goodtv" onclick="openGood(3)">Good</button>
         </div>
         <div class="input-group" style="width: 50%;">
             <div class="input-wrapper"><label>輪播切換時間 (秒)</label><input type="number" id="interval" value="600"></div>
         </div>
 
         <button class="btn btn-primary" onclick="startSystem()">▶ 啟動播放</button>
-        <p style="color: #666; font-size: 12px; margin-top: 15px;">*將開啟一般視窗，可自由縮放或關閉</p>
+        <p style="color: #666; font-size: 12px; margin-top: 15px;">*貼上 YouTube 一般網址即可，系統會自動轉換</p>
     </div>
 
     <div id="status-bar">準備中...</div>
     <button id="toggle-ctrl" onclick="togglePanel()">⚙️</button>
     
     <div id="player-wrapper">
-        <div id="loading-indicator">
-            <div class="loader"></div>
-            <div>正在連線至 GoodTV...<br><span style="font-size:12px; color:#444;">若長時間停留此處，請檢查網路</span></div>
-        </div>
-        
+        <div id="loading-indicator"><div class="loader"></div><div>載入中...</div></div>
         <iframe id="main-frame" src="" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" sandbox="allow-forms allow-scripts allow-same-origin allow-presentation"></iframe>
     </div>
 
@@ -138,7 +130,9 @@
             const u2 = document.getElementById('url2').value.trim();
             const u3 = document.getElementById('url3').value.trim();
             const seconds = parseInt(document.getElementById('interval').value, 10);
-            playlist = [u1, u2, u3].filter(u => u !== "");
+            
+            // 建立清單時，直接進行「網址轉換」
+            playlist = [u1, u2, u3].filter(u => u !== "").map(convertUrl);
 
             if (playlist.length === 0) { alert("請至少輸入一個網址"); return; }
             if (isNaN(seconds) || seconds < 5) { alert("秒數需大於 5"); return; }
@@ -154,6 +148,35 @@
             timer = setInterval(playNext, seconds * 1000);
         }
 
+        // --- 核心：網址轉換邏輯 ---
+        function convertUrl(url) {
+            // 判斷是否為 YouTube 網址
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                let videoId = '';
+                
+                // 處理 https://www.youtube.com/watch?v=ID
+                if (url.includes('v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                } 
+                // 處理 https://youtu.be/ID
+                else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                }
+                // 處理已經是 embed 的 (防止重複轉換)
+                else if (url.includes('embed/')) {
+                    return url; 
+                }
+
+                if (videoId) {
+                    // 轉換為嵌入格式，並強制開啟自動播放、隱藏控制項
+                    // 注意：rel=0 代表播完不顯示推薦影片
+                    return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&rel=0&loop=1&playlist=${videoId}`;
+                }
+            }
+            // 如果不是 YouTube (例如 GoodTV)，就原樣回傳
+            return url;
+        }
+
         function stopSystem() {
             if(timer) clearInterval(timer);
             document.getElementById('main-frame').src = "";
@@ -164,19 +187,22 @@
             document.getElementById('setup-container').style.display = 'flex';
         }
 
-        function openSearch(index) {
+        function openYT(index) {
+            window.open('https://www.youtube.com', '_blank');
+        }
+        function openGood(index) {
             window.open('https://www.goodtv.tv/search/program/801', '_blank');
         }
 
         function playNext() {
             const frame = document.getElementById('main-frame');
             const status = document.getElementById('status-bar');
-            
-            // 每次切換前，可以考慮先把 src 清空或保持原狀
-            // 這裡保持原狀，讓轉場更平滑，但如果網路慢，使用者可能會看到舊畫面卡住一下，然後跳轉
-            
             frame.src = playlist[currentIndex];
             status.innerText = `播放中 (${currentIndex + 1}/${playlist.length})`;
+            
+            // 如果是 YouTube，我們通常不需要裁切，因為 Embed 就是滿版的
+            // 但如果是 GoodTV，可能保留上次的裁切設定
+            
             currentIndex = (currentIndex + 1) % playlist.length;
         }
 
